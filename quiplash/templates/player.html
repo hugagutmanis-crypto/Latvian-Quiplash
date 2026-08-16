@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Atjautība — Spēlētājs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root{
+    --bg1:#1b1035; --bg2:#2d1b4e;
+    --pink:#ff3d81; --yellow:#ffd23f; --cyan:#35d0d6;
+    --ink:#f3edff; --muted:#b7a9d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;
+       background:radial-gradient(120% 120% at 50% 0%,var(--bg2),var(--bg1));
+       color:var(--ink);min-height:100vh;padding:24px 20px}
+  h1,.display{font-family:'Fredoka',sans-serif}
+  .logo{font-size:40px;font-weight:700;text-align:center;margin-bottom:4px}
+  .logo span{color:var(--yellow)}
+  .sub{text-align:center;color:var(--muted);margin-bottom:28px}
+
+  label{display:block;font-weight:600;margin:18px 0 8px}
+  input, textarea{width:100%;font-family:'Inter';font-size:18px;padding:16px;
+    border-radius:14px;border:2px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.06);color:var(--ink)}
+  input:focus,textarea:focus{outline:none;border-color:var(--yellow)}
+  input#code{text-transform:uppercase;letter-spacing:6px;font-family:'Fredoka';
+    font-size:28px;text-align:center}
+
+  button{width:100%;font-family:'Fredoka';font-weight:600;font-size:22px;
+    margin-top:20px;padding:16px;border:none;border-radius:14px;color:#1b1035;
+    background:var(--yellow);cursor:pointer;transition:transform .1s}
+  button:active{transform:scale(.98)}
+  button:disabled{opacity:.4}
+  button.pink{background:var(--pink);color:#fff}
+  button.cyan{background:var(--cyan);color:#08343a}
+
+  .err{color:var(--pink);text-align:center;margin-top:14px;min-height:22px;font-weight:600}
+  .prompt{font-family:'Fredoka';font-size:24px;line-height:1.25;margin:6px 0 4px}
+  .qwrap{background:rgba(255,255,255,.05);border-radius:18px;padding:20px;margin-top:18px;
+    border:1px solid rgba(255,255,255,.08)}
+  .msg{text-align:center;font-size:20px;color:var(--muted);margin-top:40px;line-height:1.5}
+  .big{font-family:'Fredoka';font-size:28px;color:var(--ink);margin-bottom:10px}
+  .hidden{display:none}
+  .done{color:var(--cyan);text-align:center;font-weight:600;margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="logo">ATJAUTĪB<span>A</span></div>
+  <div class="sub" id="whoami">Pievienojies spēlei</div>
+
+  <!-- JOIN -->
+  <div id="join">
+    <label for="code">Istabas kods</label>
+    <input id="code" maxlength="4" autocomplete="off" placeholder="ABCD">
+    <label for="name">Tavs vārds</label>
+    <input id="name" maxlength="20" autocomplete="off" placeholder="Jānis">
+    <button id="joinBtn">Pievienoties</button>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- WAITING / GENERIC MESSAGE -->
+  <div id="wait" class="hidden">
+    <div class="msg" id="waitMsg">Gaidām, kamēr saimnieks sāks spēli…</div>
+  </div>
+
+  <!-- ANSWERING -->
+  <div id="answer" class="hidden">
+    <div id="answerForms"></div>
+    <div class="done hidden" id="answerDone">Atbildes nosūtītas! Gaidām pārējos…</div>
+  </div>
+
+  <!-- VOTING -->
+  <div id="vote" class="hidden">
+    <div class="prompt" id="votePrompt"></div>
+    <button class="pink" id="voteA"></button>
+    <button class="cyan" id="voteB"></button>
+    <div class="done hidden" id="voteDone">Balss ieskaitīta!</div>
+  </div>
+</body>
+
+<script>
+const socket = io();
+const $ = id => document.getElementById(id);
+let CODE = null, NAME = null;
+let myPrompts = [], submitted = {};
+
+function show(id){ ["join","wait","answer","vote"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
+function waitMsg(t){ show("wait"); $("waitMsg").textContent = t; }
+
+$("joinBtn").onclick = () => {
+  const code = $("code").value.trim().toUpperCase();
+  const name = $("name").value.trim();
+  if(code.length !== 4 || !name){ $("err").textContent = "Ieraksti kodu un vārdu."; return; }
+  socket.emit("join_room_as_player", {code, name});
+};
+$("code").addEventListener("keyup", e => { if(e.key==="Enter") $("name").focus(); });
+$("name").addEventListener("keyup", e => { if(e.key==="Enter") $("joinBtn").click(); });
+
+socket.on("join_error", d => $("err").textContent = d.message);
+socket.on("join_ok", d => {
+  CODE = d.code; NAME = d.name;
+  $("whoami").textContent = "Sveiks, " + NAME + "!";
+  waitMsg("Gaidām, kamēr saimnieks sāks spēli…");
+});
+
+// ---- ANSWERING ----
+socket.on("your_prompts", d => {
+  myPrompts = d.prompts; submitted = {};
+  show("answer");
+  $("answerDone").classList.add("hidden");
+  const box = $("answerForms"); box.innerHTML = "";
+  myPrompts.forEach(p => {
+    const wrap = document.createElement("div");
+    wrap.className = "qwrap";
+    wrap.innerHTML = `
+      <div class="prompt">${p.prompt}</div>
+      <textarea rows="2" maxlength="80" placeholder="Tava atbilde…" id="ta_${p.id}"></textarea>
+      <button id="sb_${p.id}">Sūtīt</button>`;
+    box.appendChild(wrap);
+    $("sb_"+p.id).onclick = () => {
+      const text = $("ta_"+p.id).value.trim();
+      if(!text) return;
+      socket.emit("submit_answer", {code:CODE, id:p.id, slot:p.slot, text});
+      $("ta_"+p.id).disabled = true; $("sb_"+p.id).disabled = true;
+      $("sb_"+p.id).textContent = "Nosūtīts ✓";
+      submitted[p.id] = true;
+      if(Object.keys(submitted).length === myPrompts.length)
+        $("answerDone").classList.remove("hidden");
+    };
+  });
+});
+
+// ---- VOTING ----
+socket.on("vote_prompt", d => {
+  if(!d.can_vote){ waitMsg("Šī ir tava atbilde — nevari balsot 😎\nGaidām citu balsis…"); return; }
+  show("vote");
+  $("voteDone").classList.add("hidden");
+  $("votePrompt").textContent = d.prompt;
+  $("voteA").textContent = d.answer_a; $("voteB").textContent = d.answer_b;
+  $("voteA").disabled = false; $("voteB").disabled = false;
+  $("voteA").onclick = () => sendVote(d.id, "a");
+  $("voteB").onclick = () => sendVote(d.id, "b");
+});
+function sendVote(id, choice){
+  socket.emit("submit_vote", {code:CODE, id, choice});
+  $("voteA").disabled = true; $("voteB").disabled = true;
+  $("voteDone").classList.remove("hidden");
+}
+
+socket.on("matchup_result", () => waitMsg("Skaties lielajā ekrānā! 📺"));
+socket.on("round_over", d => waitMsg(d.is_final ? "Spēle galā! Skaties rezultātus 🏆" : "Raunds galā! Skaties ekrānā…"));
+socket.on("host_left", () => waitMsg("Saimnieks aizvēra spēli. Pārlādē lapu, lai spēlētu no jauna."));
+</script>
+</html>

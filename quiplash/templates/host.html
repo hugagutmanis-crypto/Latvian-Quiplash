@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Atjautība — Lielais ekrāns</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+<style>
+  :root{
+    --bg1:#1b1035; --bg2:#2d1b4e;
+    --pink:#ff3d81; --yellow:#ffd23f; --cyan:#35d0d6;
+    --ink:#f3edff; --muted:#b7a9d9;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Inter',system-ui,sans-serif;
+    background:radial-gradient(120% 120% at 50% 0%,var(--bg2),var(--bg1));
+    color:var(--ink); min-height:100vh; overflow-x:hidden;
+  }
+  .wrap{max-width:1000px;margin:0 auto;padding:40px 24px}
+  h1,h2,h3,.display{font-family:'Fredoka',sans-serif}
+  .logo{font-size:clamp(40px,7vw,84px);font-weight:700;line-height:1;
+        text-align:center;letter-spacing:-1px}
+  .logo span{color:var(--yellow)}
+  .sub{text-align:center;color:var(--muted);margin-top:8px;font-size:18px}
+
+  .card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+        border-radius:24px;padding:32px;margin-top:28px;
+        backdrop-filter:blur(6px)}
+
+  .join-box{text-align:center}
+  .code{font-family:'Fredoka';font-size:clamp(56px,12vw,120px);font-weight:700;
+        letter-spacing:12px;color:var(--yellow);margin:10px 0}
+  .join-url{font-size:22px;color:var(--cyan);font-weight:600}
+
+  .players{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:24px}
+  .chip{background:var(--pink);color:#fff;font-weight:600;padding:10px 20px;
+        border-radius:999px;font-size:20px;animation:pop .3s ease}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+
+  button{font-family:'Fredoka';font-weight:600;font-size:24px;cursor:pointer;
+         border:none;border-radius:16px;padding:16px 40px;color:#1b1035;
+         background:var(--yellow);transition:transform .1s}
+  button:hover{transform:translateY(-2px)}
+  button:disabled{opacity:.4;cursor:not-allowed;transform:none}
+  .center{text-align:center;margin-top:28px}
+
+  .prompt-big{font-family:'Fredoka';font-size:clamp(26px,4vw,42px);font-weight:600;
+              text-align:center;line-height:1.2;margin-bottom:28px}
+  .vs-row{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:stretch}
+  .ans{background:rgba(255,255,255,.06);border-radius:20px;padding:28px;
+       font-size:26px;line-height:1.35;display:flex;flex-direction:column;
+       justify-content:center;min-height:160px;border:3px solid transparent}
+  .ans.a{border-color:var(--pink)} .ans.b{border-color:var(--cyan)}
+  .vs{align-self:center;font-family:'Fredoka';font-size:40px;color:var(--yellow)}
+  .name-tag{font-size:16px;color:var(--muted);margin-top:14px;font-weight:600}
+  .bar{height:14px;border-radius:999px;background:rgba(255,255,255,.12);
+       margin-top:14px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;transition:width .6s ease}
+  .bar.a > i{background:var(--pink)} .bar.b > i{background:var(--cyan)}
+  .pts{font-family:'Fredoka';font-size:22px;margin-top:8px}
+  .quiplash{color:var(--yellow);font-family:'Fredoka';font-size:20px;margin-top:6px}
+
+  .standings{list-style:none}
+  .standings li{display:flex;justify-content:space-between;align-items:center;
+                background:rgba(255,255,255,.05);border-radius:14px;
+                padding:16px 22px;margin-top:12px;font-size:24px}
+  .standings li .rank{font-family:'Fredoka';color:var(--yellow);width:44px}
+  .standings li .sc{font-family:'Fredoka';color:var(--cyan)}
+  .standings li.top{background:linear-gradient(90deg,rgba(255,61,129,.25),rgba(255,210,63,.15))}
+
+  .progress{text-align:center;font-size:22px;color:var(--muted);margin-top:20px}
+  .hidden{display:none}
+  .waiting{text-align:center;color:var(--muted);font-size:20px;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">ATJAUTĪB<span>A</span></div>
+  <div class="sub">Latviešu ballītes spēle</div>
+
+  <!-- LOBBY -->
+  <div id="lobby" class="card join-box">
+    <div>Pievienojies telefonā:</div>
+    <div class="join-url" id="joinUrl">—</div>
+    <div style="margin-top:16px">Istabas kods</div>
+    <div class="code" id="roomCode">····</div>
+    <div class="players" id="players"></div>
+    <div class="center">
+      <button id="startBtn" disabled>Sākt spēli</button>
+    </div>
+    <div class="waiting" id="lobbyHint">Vajag vismaz 3 spēlētājus…</div>
+  </div>
+
+  <!-- ANSWERING -->
+  <div id="answering" class="card hidden">
+    <h2 class="display" style="text-align:center;font-size:34px">
+      <span id="roundLabel"></span> raunds</h2>
+    <div class="progress">Spēlētāji raksta atbildes…</div>
+    <div class="progress" id="answerProgress"></div>
+  </div>
+
+  <!-- VOTING -->
+  <div id="voting" class="card hidden">
+    <div class="progress" id="matchupCount"></div>
+    <div class="prompt-big" id="votePrompt"></div>
+    <div class="vs-row">
+      <div class="ans a">
+        <div id="voteA"></div>
+        <div class="name-tag" id="nameA"></div>
+        <div class="bar a hidden" id="barAwrap"><i id="barA"></i></div>
+        <div class="pts hidden" id="ptsA"></div>
+        <div class="quiplash hidden" id="qA">⚡ ATJAUTĪBA!</div>
+      </div>
+      <div class="vs">PRET</div>
+      <div class="ans b">
+        <div id="voteB"></div>
+        <div class="name-tag" id="nameB"></div>
+        <div class="bar b hidden" id="barBwrap"><i id="barB"></i></div>
+        <div class="pts hidden" id="ptsB"></div>
+        <div class="quiplash hidden" id="qB">⚡ ATJAUTĪBA!</div>
+      </div>
+    </div>
+    <div class="progress" id="voteProgress">Balso savā telefonā…</div>
+    <div class="center hidden" id="nextWrap">
+      <button id="nextBtn">Tālāk</button>
+    </div>
+  </div>
+
+  <!-- ROUND / GAME RESULTS -->
+  <div id="results" class="card hidden">
+    <h2 class="display" style="text-align:center;font-size:34px" id="resultsTitle"></h2>
+    <ol class="standings" id="standings"></ol>
+    <div class="center">
+      <button id="nextRoundBtn">Nākamais raunds</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const socket = io();
+let CODE = null;
+const $ = id => document.getElementById(id);
+function show(id){ ["lobby","answering","voting","results"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
+
+socket.on("connect", () => socket.emit("create_room"));
+
+socket.on("room_created", d => {
+  CODE = d.code;
+  $("roomCode").textContent = d.code;
+  $("joinUrl").textContent = location.origin + "/play";
+});
+
+socket.on("lobby_update", d => {
+  const box = $("players"); box.innerHTML = "";
+  d.players.filter(p=>p.connected).forEach(p => {
+    const c = document.createElement("div");
+    c.className = "chip"; c.textContent = p.name; box.appendChild(c);
+  });
+  const n = d.players.filter(p=>p.connected).length;
+  $("startBtn").disabled = n < 3;
+  $("lobbyHint").textContent = n < 3 ? "Vajag vismaz 3 spēlētājus…" : `${n} spēlētāji gatavi!`;
+});
+
+$("startBtn").onclick = () => socket.emit("start_game", {code: CODE});
+
+socket.on("phase_answering", d => {
+  show("answering");
+  $("roundLabel").textContent = d.round + ". ";
+  $("answerProgress").textContent = `Saņemtas ${d.answered} / ${d.total} atbildes`;
+});
+socket.on("answering_progress", d => {
+  $("answerProgress").textContent = `Saņemtas ${d.answered} / ${d.total} atbildes`;
+});
+
+socket.on("show_matchup", d => {
+  show("voting");
+  $("matchupCount").textContent = `Pāris ${d.index} / ${d.total}`;
+  $("votePrompt").textContent = d.prompt;
+  $("voteA").textContent = d.answer_a;
+  $("voteB").textContent = d.answer_b;
+  ["nameA","nameB","barAwrap","barBwrap","ptsA","ptsB","qA","qB","nextWrap"].forEach(x=>$(x).classList.add("hidden"));
+  $("voteProgress").classList.remove("hidden");
+  $("voteProgress").textContent = "Balso savā telefonā…";
+});
+
+socket.on("vote_progress", d => {
+  $("voteProgress").textContent = `Saņemtas balsis: ${d.votes_a + d.votes_b}`;
+});
+
+socket.on("matchup_result", d => {
+  const total = d.votes_a + d.votes_b || 1;
+  $("nameA").textContent = d.name_a; $("nameB").textContent = d.name_b;
+  $("nameA").classList.remove("hidden"); $("nameB").classList.remove("hidden");
+  $("barAwrap").classList.remove("hidden"); $("barBwrap").classList.remove("hidden");
+  $("barA").style.width = (d.votes_a/total*100)+"%";
+  $("barB").style.width = (d.votes_b/total*100)+"%";
+  $("ptsA").textContent = "+" + d.pts_a; $("ptsB").textContent = "+" + d.pts_b;
+  $("ptsA").classList.remove("hidden"); $("ptsB").classList.remove("hidden");
+  if(d.quiplash_a) $("qA").classList.remove("hidden");
+  if(d.quiplash_b) $("qB").classList.remove("hidden");
+  $("voteProgress").classList.add("hidden");
+  $("nextWrap").classList.remove("hidden");
+});
+
+$("nextBtn").onclick = () => socket.emit("next_matchup", {code: CODE});
+
+socket.on("round_over", d => {
+  show("results");
+  $("resultsTitle").textContent = d.is_final ? "🏆 Rezultāti" : `${d.round}. raunda rezultāti`;
+  const ol = $("standings"); ol.innerHTML = "";
+  d.standings.forEach((p,i) => {
+    const li = document.createElement("li");
+    if(i===0) li.className="top";
+    li.innerHTML = `<span class="rank">${i+1}.</span><span style="flex:1">${p.name}</span><span class="sc">${p.score}</span>`;
+    ol.appendChild(li);
+  });
+  $("nextRoundBtn").style.display = d.is_final ? "none" : "inline-block";
+});
+
+$("nextRoundBtn").onclick = () => socket.emit("next_round", {code: CODE});
+
+socket.on("host_error", d => alert(d.message));
+</script>
+</body>
+</html>
