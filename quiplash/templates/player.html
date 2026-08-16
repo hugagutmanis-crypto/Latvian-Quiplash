@@ -104,7 +104,7 @@ $("name").addEventListener("keyup", e => { if(e.key==="Enter") $("joinBtn").clic
 socket.on("join_error", d => $("err").textContent = d.message);
 socket.on("join_ok", d => {
   CODE = d.code; NAME = d.name;
-  $("whoami").textContent = "Sveiks, " + NAME + "!";
+  $("whoami").textContent = "";
   waitMsg("Gaidām, kamēr saimnieks sāks spēli…");
 });
 
