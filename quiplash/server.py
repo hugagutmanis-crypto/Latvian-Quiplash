@@ -19,7 +19,7 @@ from flask_socketio import SocketIO, emit, join_room
 
 from prompts import PROMPTS
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='.')
 app.config["SECRET_KEY"] = "nomaini-so-uz-jebko-slepenu"
 # threading async mode = mazāk atkarību, strādā uz jebkura hosta.
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
