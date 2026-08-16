@@ -6,7 +6,7 @@
 <title>Atjautība — Lielais ekrāns</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
 <style>
   :root{
@@ -21,7 +21,7 @@
     color:var(--ink); min-height:100vh; overflow-x:hidden;
   }
   .wrap{max-width:1000px;margin:0 auto;padding:40px 24px}
-  h1,h2,h3,.display{font-family:'Fredoka',sans-serif}
+  h1,h2,h3,.display{font-family:'Nunito',sans-serif}
   .logo{font-size:clamp(40px,7vw,84px);font-weight:700;line-height:1;
         text-align:center;letter-spacing:-1px}
   .logo span{color:var(--yellow)}
@@ -32,7 +32,7 @@
         backdrop-filter:blur(6px)}
 
   .join-box{text-align:center}
-  .code{font-family:'Fredoka';font-size:clamp(56px,12vw,120px);font-weight:700;
+  .code{font-family:'Nunito';font-size:clamp(56px,12vw,120px);font-weight:700;
         letter-spacing:12px;color:var(--yellow);margin:10px 0}
   .join-url{font-size:22px;color:var(--cyan);font-weight:600}
 
@@ -41,35 +41,35 @@
         border-radius:999px;font-size:20px;animation:pop .3s ease}
   @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
 
-  button{font-family:'Fredoka';font-weight:600;font-size:24px;cursor:pointer;
+  button{font-family:'Nunito';font-weight:600;font-size:24px;cursor:pointer;
          border:none;border-radius:16px;padding:16px 40px;color:#1b1035;
          background:var(--yellow);transition:transform .1s}
   button:hover{transform:translateY(-2px)}
   button:disabled{opacity:.4;cursor:not-allowed;transform:none}
   .center{text-align:center;margin-top:28px}
 
-  .prompt-big{font-family:'Fredoka';font-size:clamp(26px,4vw,42px);font-weight:600;
+  .prompt-big{font-family:'Nunito';font-size:clamp(26px,4vw,42px);font-weight:600;
               text-align:center;line-height:1.2;margin-bottom:28px}
   .vs-row{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:stretch}
   .ans{background:rgba(255,255,255,.06);border-radius:20px;padding:28px;
        font-size:26px;line-height:1.35;display:flex;flex-direction:column;
        justify-content:center;min-height:160px;border:3px solid transparent}
   .ans.a{border-color:var(--pink)} .ans.b{border-color:var(--cyan)}
-  .vs{align-self:center;font-family:'Fredoka';font-size:40px;color:var(--yellow)}
+  .vs{align-self:center;font-family:'Nunito';font-size:40px;color:var(--yellow)}
   .name-tag{font-size:16px;color:var(--muted);margin-top:14px;font-weight:600}
   .bar{height:14px;border-radius:999px;background:rgba(255,255,255,.12);
        margin-top:14px;overflow:hidden}
   .bar > i{display:block;height:100%;width:0;transition:width .6s ease}
   .bar.a > i{background:var(--pink)} .bar.b > i{background:var(--cyan)}
-  .pts{font-family:'Fredoka';font-size:22px;margin-top:8px}
-  .quiplash{color:var(--yellow);font-family:'Fredoka';font-size:20px;margin-top:6px}
+  .pts{font-family:'Nunito';font-size:22px;margin-top:8px}
+  .quiplash{color:var(--yellow);font-family:'Nunito';font-size:20px;margin-top:6px}
 
   .standings{list-style:none}
   .standings li{display:flex;justify-content:space-between;align-items:center;
                 background:rgba(255,255,255,.05);border-radius:14px;
                 padding:16px 22px;margin-top:12px;font-size:24px}
-  .standings li .rank{font-family:'Fredoka';color:var(--yellow);width:44px}
-  .standings li .sc{font-family:'Fredoka';color:var(--cyan)}
+  .standings li .rank{font-family:'Nunito';color:var(--yellow);width:44px}
+  .standings li .sc{font-family:'Nunito';color:var(--cyan)}
   .standings li.top{background:linear-gradient(90deg,rgba(255,61,129,.25),rgba(255,210,63,.15))}
 
   .progress{text-align:center;font-size:22px;color:var(--muted);margin-top:20px}
